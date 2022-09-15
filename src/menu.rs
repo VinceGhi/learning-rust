@@ -2,14 +2,14 @@ use core::time;
 use std::io::{stdout, Write};
 use crossterm::{cursor::MoveTo, ExecutableCommand, terminal::{ClearType, Clear}, event::{Event, self, KeyCode}};
 
-pub struct TerminalMenu<'a> {
+pub struct TerminalMenu {
     pub title: String,
-    pub items: Vec<TerminalMenuItem<'a>>,
+    pub items: Vec<TerminalMenuItem>,
     pub selection_char: char
 }
 
-impl TerminalMenu<'_> {
-    pub fn select(&self) -> Result<&TerminalMenuItem, String> {
+impl TerminalMenu {
+    pub fn select(&self) {
         enter();
         let mut selection: u16 = 0;
         self.print_with_selection(&selection);
@@ -27,20 +27,17 @@ impl TerminalMenu<'_> {
 
                             if key == event::KeyCode::Esc {
                                 exit();
-                                return Err("User pressed ESC".to_string());
+                                break;
                             } else if key == event::KeyCode::Enter || key == event::KeyCode::Char(' ') {
-                                exit();
                                 let selected_menu_item: &TerminalMenuItem = &self.items[selection as usize];
-                                if selected_menu_item.menu.is_some() {
-                                    let item: &TerminalMenuItem = selected_menu_item.menu.unwrap().select().expect("Something went wrong!");
-                                    if item.back {
-                                        return Ok(item);
-                                    } else {
-                                        return item.menu.expect("Woopsie!").select();
-                                    }
+                                match selected_menu_item.action {
+                                    Some(action) => {
+                                        exit();
+                                        action();
+                                        break;
+                                    },
+                                    None => {},
                                 }
-                                
-                                return Ok(selected_menu_item);
                             } else if key == event::KeyCode::Up || key == event::KeyCode::Char('w') {
                                 if selection == 0 {
                                     selection = (self.items.len() - 1) as u16;
@@ -82,11 +79,11 @@ impl TerminalMenu<'_> {
     }  
 }
 
-pub struct TerminalMenuItem<'a> {
+pub struct TerminalMenuItem {
     pub text: String,
     pub exit: bool,
     pub back: bool,
-    pub menu: Option<&'a TerminalMenu<'a>>
+    pub action: Option<fn()>
 }
 
 fn move_cursor(x: u16, y: u16) {
