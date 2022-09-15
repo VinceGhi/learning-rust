@@ -4,13 +4,20 @@ use std::io::{stdout, Write, stdin, Read};
 mod menu;
 
 fn main() {
+    // this whole thing could somehow work i guess... but.. as someone mentioned on the official discord server for rust: i have to get rid of the java habbits :(
+    let mut sub_menu: TerminalMenu = TerminalMenu {title: "Test Menu".to_string(), items: Vec::new(), selection_char: '>'};
     let mut menu: TerminalMenu = TerminalMenu {title: "Test Menu".to_string(), items: Vec::new(), selection_char: '>'};
     let mut items: Vec<TerminalMenuItem> = Vec::new();
-    items.push(TerminalMenuItem { text: "Entry one".to_string(), exit: false, menu: Option::Some(&menu) });
-    items.push(TerminalMenuItem { text: "Entry two".to_string(), exit: false, menu: Option::Some(&menu) });
-    items.push(TerminalMenuItem { text: "Entry three".to_string(), exit: false, menu: Option::None });
-    items.push(TerminalMenuItem { text: "Entry four".to_string(), exit: false, menu: Option::None });
-    items.push(TerminalMenuItem { text: "Quit".to_string(), exit: true, menu: Option::None });
+    items.push(TerminalMenuItem { text: "Entry one".to_string(), exit: false, menu: Option::None, back: false });
+    items.push(TerminalMenuItem { text: "Back".to_string(), exit: false, menu: Option::None, back: true });
+    sub_menu.items = items;
+
+    let mut items: Vec<TerminalMenuItem> = Vec::new();
+    items.push(TerminalMenuItem { text: "Entry one".to_string(), exit: false, menu: Option::Some(&sub_menu), back: false });
+    items.push(TerminalMenuItem { text: "Entry two".to_string(), exit: false, menu: Option::Some(&sub_menu), back: false });
+    items.push(TerminalMenuItem { text: "Entry three".to_string(), exit: false, menu: Option::None, back: false });
+    items.push(TerminalMenuItem { text: "Entry four".to_string(), exit: false, menu: Option::None, back: false });
+    items.push(TerminalMenuItem { text: "Quit".to_string(), exit: true, menu: Option::None, back: false });
     menu.items = items;
 
     loop {

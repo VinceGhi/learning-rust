@@ -32,7 +32,12 @@ impl TerminalMenu<'_> {
                                 exit();
                                 let selected_menu_item: &TerminalMenuItem = &self.items[selection as usize];
                                 if selected_menu_item.menu.is_some() {
-                                    return selected_menu_item.menu.unwrap().select();
+                                    let item: &TerminalMenuItem = selected_menu_item.menu.unwrap().select().expect("Something went wrong!");
+                                    if item.back {
+                                        return Ok(item);
+                                    } else {
+                                        return item.menu.expect("Woopsie!").select();
+                                    }
                                 }
                                 
                                 return Ok(selected_menu_item);
@@ -80,6 +85,7 @@ impl TerminalMenu<'_> {
 pub struct TerminalMenuItem<'a> {
     pub text: String,
     pub exit: bool,
+    pub back: bool,
     pub menu: Option<&'a TerminalMenu<'a>>
 }
 
