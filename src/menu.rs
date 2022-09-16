@@ -9,7 +9,7 @@ use std::io::{stdout, Write};
 pub struct TerminalMenu {
     pub title: String,
     pub items: Vec<TerminalMenuItem>,
-    pub selection_char: char,
+    pub selection_char: char
 }
 
 impl TerminalMenu {
@@ -43,6 +43,8 @@ impl TerminalMenu {
                 }
 
                 self.print_with_selection(&selection);
+            } else if let Event::Resize(_, _) = event {
+                self.print_with_selection(&selection);
             }
         }
     }
@@ -58,7 +60,7 @@ impl TerminalMenu {
             let item_text: StyledContent<String> = if self.items[i].action == None {
                 format!("{}", self.items[i].text).dark_grey()
             } else if is_current_selection {
-                format!("{}", self.items[i].text).red()
+                format!("{}", self.items[i].text).blue().bold()
             } else {
                 format!("{}", self.items[i].text).reset()
             };
