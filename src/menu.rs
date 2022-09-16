@@ -18,48 +18,38 @@ impl TerminalMenu {
         let mut selection: u16 = 0;
         self.print_with_selection(&selection);
         loop {
-            match crossterm::event::read() {
-                Ok(event) => match event {
-                    Event::FocusGained => {}
-                    Event::FocusLost => {}
-                    Event::Key(key_event) => {
-                        let key: KeyCode = key_event.code;
+            let event = crossterm::event::read().expect("Not good :(");
 
-                        if key == event::KeyCode::Esc {
-                            exit();
-                            return Option::None;
-                        } else if key == event::KeyCode::Enter || key == event::KeyCode::Char(' ') {
-                            let selected_menu_item: &TerminalMenuItem =
-                                &self.items[selection as usize];
-                            exit();
-                            match selected_menu_item.action {
-                                Some(action) => {
-                                    return Option::Some(action);
-                                }
-                                None => {
-                                    return Option::None;
-                                }
-                            }
-                        } else if key == event::KeyCode::Up || key == event::KeyCode::Char('w') {
-                            if selection == 0 {
-                                selection = (self.items.len() - 1) as u16;
-                            } else {
-                                selection -= 1;
-                            }
-                        } else if key == event::KeyCode::Down || key == event::KeyCode::Char('s') {
-                            selection += 1;
-                            if selection >= self.items.len() as u16 {
-                                selection = 0;
-                            }
+            if let Event::Key(key_event) = event {
+                let key: KeyCode = key_event.code;
+                if key == event::KeyCode::Esc {
+                    exit();
+                    return Option::None;
+                } else if key == event::KeyCode::Enter || key == event::KeyCode::Char(' ') {
+                    let selected_menu_item: &TerminalMenuItem = &self.items[selection as usize];
+                    exit();
+                    match selected_menu_item.action {
+                        Some(action) => {
+                            return Option::Some(action);
                         }
-
-                        self.print_with_selection(&selection);
+                        None => {
+                            return Option::None;
+                        }
                     }
-                    Event::Mouse(_) => {}
-                    Event::Paste(_) => {}
-                    Event::Resize(_, _) => {}
-                },
-                Err(_) => {}
+                } else if key == event::KeyCode::Up || key == event::KeyCode::Char('w') {
+                    if selection == 0 {
+                        selection = (self.items.len() - 1) as u16;
+                    } else {
+                        selection -= 1;
+                    }
+                } else if key == event::KeyCode::Down || key == event::KeyCode::Char('s') {
+                    selection += 1;
+                    if selection >= self.items.len() as u16 {
+                        selection = 0;
+                    }
+                }
+
+                self.print_with_selection(&selection);
             }
         }
     }
