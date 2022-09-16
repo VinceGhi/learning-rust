@@ -8,12 +8,12 @@ use std::io::{stdout, Write};
 
 pub struct TerminalMenu {
     pub title: String,
-    pub items: Vec<TerminalMenuItem>,
+    pub entries: Vec<String>,
     pub selection_char: char
 }
 
 impl TerminalMenu {
-    pub fn select(&self) -> Option<fn()> {
+    pub fn select(&self) -> u8 {
         enter();
         let mut selection: i8 = 0;
         self.print_with_selection(&selection);
@@ -22,20 +22,9 @@ impl TerminalMenu {
 
             if let Event::Key(key_event) = event {
                 let key: KeyCode = key_event.code;
-                if key == event::KeyCode::Esc {
+                if key == event::KeyCode::Enter || key == event::KeyCode::Char(' ') {
                     exit();
-                    return Option::None;
-                } else if key == event::KeyCode::Enter || key == event::KeyCode::Char(' ') {
-                    let selected_menu_item: &TerminalMenuItem = &self.items[selection as usize];
-                    exit();
-                    match selected_menu_item.action {
-                        Some(action) => {
-                            return Option::Some(action);
-                        }
-                        None => {
-                            return Option::None;
-                        }
-                    }
+                    return selection as u8;
                 } else if key == event::KeyCode::Up || key == event::KeyCode::Char('w') {
                     selection = self.change_selection(selection, -1);
                 } else if key == event::KeyCode::Down || key == event::KeyCode::Char('s') {
@@ -52,17 +41,15 @@ impl TerminalMenu {
     fn print_with_selection(&self, selection: &i8) {
         move_cursor(0, 0);
         print!("{}", self.title);
-        for i in 0..self.items.len() {
+        for i in 0..self.entries.len() {
             move_cursor(0, 1 + (i as u16));
 
             let is_current_selection: bool = i == *selection as usize;
 
-            let item_text: StyledContent<String> = if self.items[i].action == None {
-                format!("{}", self.items[i].text).dark_grey()
-            } else if is_current_selection {
-                format!("{}", self.items[i].text).blue().bold()
+            let item_text: StyledContent<String> = if is_current_selection {
+                format!("{}", self.entries[i]).blue().bold()
             } else {
-                format!("{}", self.items[i].text).reset()
+                format!("{}", self.entries[i]).reset()
             };
 
             if is_current_selection {
@@ -78,28 +65,13 @@ impl TerminalMenu {
         let mut new_selection: i8 = selection + change;
 
         if new_selection < 0 {
-            new_selection = (self.items.len() as i8) - 1;
-        } else if new_selection >= self.items.len() as i8 {
+            new_selection = (self.entries.len() as i8) - 1;
+        } else if new_selection >= self.entries.len() as i8 {
             new_selection = 0;
-        }
-
-        while !self.selection_has_action(new_selection) {
-            return self.change_selection(new_selection, change);
         }
 
         return new_selection;
     }
-
-    fn selection_has_action(&self, selection: i8) -> bool {
-        return self.items[selection as usize].action.is_some();
-    }
-}
-
-pub struct TerminalMenuItem {
-    pub text: String,
-    pub exit: bool,
-    pub back: bool,
-    pub action: Option<fn()>,
 }
 
 fn move_cursor(x: u16, y: u16) {

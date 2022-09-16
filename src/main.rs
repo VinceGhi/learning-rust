@@ -1,140 +1,77 @@
-use crossterm::{ExecutableCommand, terminal::{Clear, ClearType}, cursor::MoveTo};
-use menu::{TerminalMenu, TerminalMenuItem};
+use crossterm::{ExecutableCommand, terminal::{Clear, ClearType}, cursor::{MoveTo, SavePosition, RestorePosition, Hide, Show}};
+use menu::{TerminalMenu};
+use player::Player;
 use core::time;
 use std::{process, thread, io::stdout};
 
 mod menu;
+mod player;
 
 fn main() {
-    // this whole thing could somehow work i guess... but.. as someone mentioned on the official discord server for rust: i have to get rid of the java habbits :(
-    create_main_menu();
-}
-
-fn create_main_menu() {
-    let mut menu: TerminalMenu = TerminalMenu {
-        title: "Test Menu".to_string(),
-        items: Vec::new(),
-        selection_char: '>',
-    };
-    menu.items = vec![
-        TerminalMenuItem {
-            text: "Sub Menu".to_string(),
-            exit: false,
-            action: Option::Some(create_sub_menu),
-            back: false,
-        },
-        TerminalMenuItem {
-            text: "Progressbar".to_string(),
-            exit: false,
-            action: Option::Some(progress_bar),
-            back: false,
-        },
-        TerminalMenuItem {
-            text: "No fn".to_string(),
-            exit: false,
-            action: Option::None,
-            back: false,
-        },
-        TerminalMenuItem {
-            text: "No fn".to_string(),
-            exit: false,
-            action: Option::None,
-            back: false,
-        },
-        TerminalMenuItem {
-            text: "Quit".to_string(),
-            exit: true,
-            action: Option::Some(exit),
-            back: false,
-        },
-    ];
-    menu.select().expect("Well, there is no function...")();
-}
-
-fn create_sub_menu() {
-    let mut sub_menu: TerminalMenu = TerminalMenu {
-        title: "Test Sub Menu".to_string(),
-        items: Vec::new(),
-        selection_char: '>',
-    };
-    sub_menu.items = vec![
-        TerminalMenuItem {
-            text: "Back".to_string(),
-            exit: false,
-            action: Option::Some(create_main_menu),
-            back: true,
-        },
-        TerminalMenuItem {
-            text: "Progressbar".to_string(),
-            exit: false,
-            action: Option::Some(progress_bar),
-            back: false,
-        },
-        TerminalMenuItem {
-            text: "Sub Sub Menu".to_string(),
-            exit: false,
-            action: Option::Some(create_sub_sub_menu),
-            back: true,
-        },
-        TerminalMenuItem {
-            text: "Entry one".to_string(),
-            exit: false,
-            action: Option::None,
-            back: false,
-        },
-    ];
-    sub_menu.select().expect("Well, there is no function...")();
-}
-
-fn create_sub_sub_menu() {
-    let mut sub_menu: TerminalMenu = TerminalMenu {
-        title: "Test Sub Sub Menu".to_string(),
-        items: Vec::new(),
-        selection_char: '>',
-    };
-    sub_menu.items = vec![
-        TerminalMenuItem {
-            text: "Back".to_string(),
-            exit: false,
-            action: Option::Some(create_sub_menu),
-            back: true,
-        },
-        TerminalMenuItem {
-            text: "Progressbar".to_string(),
-            exit: false,
-            action: Option::Some(progress_bar),
-            back: false,
-        },
-        TerminalMenuItem {
-            text: "Entry one".to_string(),
-            exit: false,
-            action: Option::None,
-            back: false,
-        },
-    ];
-    sub_menu.select().expect("Well, there is no function...")();
-}
-
-fn exit() {
-    process::exit(1);
-}
-
-fn progress_bar() {
-    let mut progress: u8 = 0;
-    while progress <= 100 {
-        stdout().execute(Clear(ClearType::All)).unwrap();
-
-        if let Some((w, _)) = term_size::dimensions() {
-            let calc_progress: usize = ((w.min(100) - 3) as f64 / 100f64 * progress as f64).ceil() as usize;
-            let calc_empty: usize = w.min(100) - 3 - calc_progress;
-            print!("[{}{}]","#".repeat(calc_progress), "-".repeat(calc_empty));
-            stdout().execute(MoveTo(0, 0)).unwrap();
-        }
-
-        thread::sleep(time::Duration::from_millis(50));
-        progress += 1;
+    //progress_bar(time::Duration::from_secs(1), "Fake loading".to_string()); // i actually just wanted to test a little bit of stuff so... yeah... 
+    let mut player: Player = Player::default();
+    loop { // "game loop" damn.. i have no idea what i am doing :')
+        start_menu(&mut player);
     }
-    println!("\nDone with fake loading thing...");
-    thread::sleep(time::Duration::from_secs(5));
-    create_main_menu();
 }
+
+fn start_menu(player: &mut Player) {
+    let menu = TerminalMenu {
+        title: "Test Menu".to_string(),
+        entries: vec![
+            "Select Class".to_string(), "Player Info".to_string(), "Quit".to_string(),
+        ],
+        selection_char: '>',
+    };
+    let selection = menu.select();
+
+    if selection == 0 {
+        select_class_menu(player);
+    } else if selection == 1 {
+        println!("{}", player.to_string());
+        thread::sleep(time::Duration::from_secs(5));
+    }else {
+        process::exit(1);
+    }
+}
+
+fn select_class_menu(player: &mut Player) {
+    let class_selection_menu = TerminalMenu {
+        title: "Class Selection".to_string(),
+        entries: vec![
+            "Class I".to_string(), "Class II".to_string(), "Class III".to_string()
+        ],
+        selection_char: '>',
+    };
+
+    let selection = class_selection_menu.select();
+
+    if selection == 0 {
+        player.set_stats("Class I".to_string(), 10, 0);
+    } else if selection == 1 {
+        player.set_stats("Class II".to_string(), 0, 10);
+    } else if selection == 2 {
+        player.set_stats("Class III".to_string(), 5, 5);
+    }
+}
+
+//fn progress_bar(dur: time::Duration, text: String) {
+//    let mut progress: u8 = 0;
+//    stdout().execute(SavePosition).unwrap();
+//    stdout().execute(Hide).unwrap();
+//    while progress <= 100 {
+//        if let Some((w, _)) = term_size::dimensions() {
+//            let actually_bar_len = w - 3 - text.len();
+//            let calc_progress: usize = (actually_bar_len as f64 / 100f64 * progress as f64).ceil() as usize;
+//            let calc_empty: usize = actually_bar_len - calc_progress;
+//            print!("{} [{}{}]", text, "■".repeat(calc_progress), "□".repeat(calc_empty));
+//            stdout().execute(RestorePosition).unwrap();
+//        }
+//
+//        thread::sleep(dur.div_f32(100f32));
+//        progress += 1;
+//    }
+//    stdout().execute(Show).unwrap();
+//    println!("");
+//    thread::sleep(time::Duration::from_secs(1));
+//}
