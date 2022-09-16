@@ -2,7 +2,7 @@ use crossterm::{
     cursor::MoveTo,
     event::{self, Event, KeyCode},
     terminal::{Clear, ClearType},
-    ExecutableCommand,
+    ExecutableCommand, style::{Stylize, StyledContent},
 };
 use std::io::{stdout, Write};
 
@@ -15,7 +15,7 @@ pub struct TerminalMenu {
 impl TerminalMenu {
     pub fn select(&self) -> Option<fn()> {
         enter();
-        let mut selection: u16 = 0;
+        let mut selection: i8 = 0;
         self.print_with_selection(&selection);
         loop {
             let event = crossterm::event::read().expect("Not good :(");
@@ -37,16 +37,9 @@ impl TerminalMenu {
                         }
                     }
                 } else if key == event::KeyCode::Up || key == event::KeyCode::Char('w') {
-                    if selection == 0 {
-                        selection = (self.items.len() - 1) as u16;
-                    } else {
-                        selection -= 1;
-                    }
+                    selection = self.change_selection(selection, -1);
                 } else if key == event::KeyCode::Down || key == event::KeyCode::Char('s') {
-                    selection += 1;
-                    if selection >= self.items.len() as u16 {
-                        selection = 0;
-                    }
+                    selection = self.change_selection(selection, 1);
                 }
 
                 self.print_with_selection(&selection);
@@ -54,18 +47,49 @@ impl TerminalMenu {
         }
     }
 
-    fn print_with_selection(&self, selection: &u16) {
+    fn print_with_selection(&self, selection: &i8) {
         move_cursor(0, 0);
         print!("{}", self.title);
         for i in 0..self.items.len() {
             move_cursor(0, 1 + (i as u16));
-            if i == *selection as usize {
-                print!("{} {}", self.selection_char, self.items[i].text);
+
+            let is_current_selection: bool = i == *selection as usize;
+
+            let item_text: StyledContent<String> = if self.items[i].action == None {
+                format!("{}", self.items[i].text).dark_grey()
+            } else if is_current_selection {
+                format!("{}", self.items[i].text).red()
             } else {
-                print!("  {}", self.items[i].text);
+                format!("{}", self.items[i].text).reset()
+            };
+
+            if is_current_selection {
+                print!("{} {}", self.selection_char, item_text);
+            } else {
+                print!("  {}", item_text);
             }
         }
         stdout().flush().unwrap();
+    }
+
+    fn change_selection(&self, selection: i8, change: i8) -> i8 {
+        let mut new_selection: i8 = selection + change;
+
+        if new_selection < 0 {
+            new_selection = (self.items.len() as i8) - 1;
+        } else if new_selection >= self.items.len() as i8 {
+            new_selection = 0;
+        }
+
+        while !self.selection_has_action(new_selection) {
+            return self.change_selection(new_selection, change);
+        }
+
+        return new_selection;
+    }
+
+    fn selection_has_action(&self, selection: i8) -> bool {
+        return self.items[selection as usize].action.is_some();
     }
 }
 
